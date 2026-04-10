@@ -3,7 +3,7 @@ SHELL := /bin/bash
 VENV := .venv
 PYTHON := $(VENV)/bin/python
 
-.PHONY: help up down restart logs venv install load query all spark-up spark-down trino-up trino-down trino-logs trino-shell cluster-load cluster-query clean
+.PHONY: help up down restart logs java venv install load query all spark-up spark-down trino-up trino-down trino-logs trino-shell cluster-load cluster-query clean
 
 help:
 	@printf "Targets:\n"
@@ -11,8 +11,9 @@ help:
 	@printf "  make down     - stop local services\n"
 	@printf "  make restart  - restart local services\n"
 	@printf "  make logs     - follow docker compose logs\n"
+	@printf "  make java     - ensure Temurin 17 is installed (brew)\n"
 	@printf "  make venv     - create uv virtualenv\n"
-	@printf "  make install  - install Python dependencies\n"
+	@printf "  make install  - ensure Java + install Python dependencies\n"
 	@printf "  make load     - load CSV files into Iceberg\n"
 	@printf "  make query    - run SQL query script\n"
 	@printf "  make all      - up + venv + install + load + query\n"
@@ -40,8 +41,19 @@ logs:
 venv:
 	uv venv $(VENV)
 
-install: venv
-	uv pip install -e .
+java:
+	@if /usr/libexec/java_home -v 17 >/dev/null 2>&1; then \
+		echo "Java 17 already available"; \
+	elif command -v brew >/dev/null 2>&1; then \
+		echo "Installing Temurin 17 via Homebrew..."; \
+		brew install --cask temurin@17; \
+	else \
+		echo "Homebrew not found. Install Homebrew or install a Java 17 JDK manually."; \
+		exit 1; \
+	fi
+
+install: java venv
+	uv sync
 
 load: install
 	$(PYTHON) load.py
