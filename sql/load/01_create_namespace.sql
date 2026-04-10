@@ -1,0 +1,1 @@
+CREATE NAMESPACE IF NOT EXISTS iceberg.sales

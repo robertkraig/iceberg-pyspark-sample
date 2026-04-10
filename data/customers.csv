@@ -1,0 +1,5 @@
+customer_id,customer_name,signup_date,region
+1,Alice,2025-12-20,NA
+2,Bob,2026-01-02,EU
+3,Cara,2026-01-05,NA
+4,Dan,2026-01-10,APAC

@@ -1,0 +1,75 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    container_name: iceberg-minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  mc:
+    image: minio/mc:RELEASE.2025-03-12T17-29-24Z
+    container_name: iceberg-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://minio:9000 admin password; do sleep 1; done;
+      /usr/bin/mc mb local/warehouse --ignore-existing;
+      /usr/bin/mc anonymous set download local/warehouse;
+      exit 0;
+      "
+
+  rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: iceberg-rest
+    depends_on:
+      - minio
+      - mc
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password
+      AWS_REGION: us-east-1
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+    ports:
+      - "8181:8181"
+
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: iceberg-spark-master
+    profiles: ["spark"]
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "spark-master", "--port", "7077", "--webui-port", "8080"]
+    ports:
+      - "7077:7077"
+      - "18080:8080"
+    volumes:
+      - ./:/workspace
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: iceberg-spark-worker
+    profiles: ["spark"]
+    depends_on:
+      - spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "--webui-port", "8081", "--cores", "2", "--memory", "2G", "spark://spark-master:7077"]
+    ports:
+      - "18081:8081"
+    volumes:
+      - ./:/workspace
+
+  trino:
+    image: trinodb/trino:461
+    container_name: iceberg-trino
+    depends_on:
+      - rest
+      - minio
+    volumes:
+      - ./trino/etc:/etc/trino
+    ports:
+      - "8088:8080"

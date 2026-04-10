@@ -1,0 +1,5 @@
+product_id,product_name,category,price,updated_at
+101,Laptop,Electronics,1200.00,2026-01-01 10:00:00
+102,Mouse,Electronics,25.00,2026-01-01 10:00:00
+103,Desk,Furniture,300.00,2026-01-01 10:00:00
+104,Notebook,Stationery,5.00,2026-01-01 10:00:00
