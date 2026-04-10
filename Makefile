@@ -3,13 +3,14 @@ SHELL := /bin/bash
 VENV := .venv
 PYTHON := $(VENV)/bin/python
 
-.PHONY: help up down restart logs java venv install load query all spark-up spark-down trino-up trino-down trino-logs trino-shell cluster-load cluster-query clean
+.PHONY: help up down restart recover logs java venv install load query all spark-up spark-down trino-up trino-down trino-logs trino-shell cluster-load cluster-query clean
 
 help:
 	@printf "Targets:\n"
 	@printf "  make up       - start Iceberg REST + MinIO\n"
 	@printf "  make down     - stop local services\n"
 	@printf "  make restart  - restart local services\n"
+	@printf "  make recover  - down + kill stale spark/java + up\n"
 	@printf "  make logs     - follow docker compose logs\n"
 	@printf "  make java     - ensure Temurin 17 is installed (brew)\n"
 	@printf "  make venv     - create uv virtualenv\n"
@@ -34,6 +35,10 @@ down:
 	docker compose -f compose.yml down --remove-orphans
 
 restart: down up
+
+recover: down
+	-pkill -f -i "spark|java"
+	docker compose -f compose.yml up -d
 
 logs:
 	docker compose -f compose.yml logs -f
