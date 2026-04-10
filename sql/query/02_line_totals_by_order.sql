@@ -1,8 +1,16 @@
 SELECT
-  oi.order_id,
-  oi.order_date,
-  SUM(oi.qty * oi.unit_price) AS line_total
-FROM iceberg.sales.order_items oi
-WHERE oi.order_date BETWEEN DATE '2026-01-01' AND DATE '2026-02-28'
-GROUP BY oi.order_id, oi.order_date
-ORDER BY oi.order_date, oi.order_id
+  e.event_date,
+  e.event_id,
+  c.customer_name,
+  e.event_type,
+  p.product_name,
+  e.quantity,
+  e.amount
+FROM iceberg.sales.events e
+JOIN iceberg.sales.customers c
+  ON e.customer_id = c.customer_id
+LEFT JOIN iceberg.sales.products p
+  ON e.product_id = p.product_id
+WHERE e.event_year = 2026
+  AND e.event_month = 1
+ORDER BY e.event_date, e.event_id

@@ -37,6 +37,9 @@ Tables created in catalog `iceberg`, namespace `sales`:
 - `iceberg.sales.products`
 - `iceberg.sales.orders`
 - `iceberg.sales.order_items`
+- `iceberg.sales.events`
+
+`events` is partitioned by `event_year`, `event_month`, `event_day` (+ bucket on `customer_id`) and query samples join events to customer/product/order data.
 
 ## 4) Run SQL queries
 

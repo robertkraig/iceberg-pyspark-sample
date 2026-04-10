@@ -1,4 +1,12 @@
-SELECT order_id, customer_id, order_date, status, total_amount
-FROM iceberg.sales.orders
-WHERE order_date BETWEEN DATE '2026-01-01' AND DATE '2026-01-31'
-ORDER BY order_date, order_id
+SELECT
+  event_year,
+  event_month,
+  event_day,
+  event_type,
+  COUNT(*) AS event_count,
+  SUM(COALESCE(amount, 0)) AS total_amount
+FROM iceberg.sales.events
+WHERE event_year = 2026
+  AND event_month IN (1, 2)
+GROUP BY event_year, event_month, event_day, event_type
+ORDER BY event_year, event_month, event_day, event_type

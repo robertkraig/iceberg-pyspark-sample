@@ -47,20 +47,20 @@ def main() -> None:
     spark = build_spark()
     sql_dir = Path(__file__).resolve().parent / "sql" / "query"
 
-    print("Orders in January 2026")
+    print("Event counts by day and type (year/month/day partitions)")
     spark.sql(read_sql_file(sql_dir / "01_orders_in_january.sql")).show(truncate=False)
 
-    print("Line totals by order")
+    print("January events joined to customers/products")
     spark.sql(read_sql_file(sql_dir / "02_line_totals_by_order.sql")).show(
         truncate=False
     )
 
-    print("Joined order details (join on IDs + date)")
+    print("Purchase events joined to orders, items, customers, products")
     spark.sql(read_sql_file(sql_dir / "03_joined_order_details.sql")).show(
         truncate=False
     )
 
-    print("Top customers by total spend")
+    print("Top customers by event revenue")
     spark.sql(read_sql_file(sql_dir / "04_top_customers_by_spend.sql")).show(
         truncate=False
     )

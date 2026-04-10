@@ -104,6 +104,24 @@ def main() -> None:
         ]
     )
 
+    events_schema = T.StructType(
+        [
+            T.StructField("event_id", T.LongType(), False),
+            T.StructField("customer_id", T.LongType(), False),
+            T.StructField("product_id", T.LongType(), True),
+            T.StructField("order_id", T.LongType(), True),
+            T.StructField("session_id", T.StringType(), True),
+            T.StructField("event_type", T.StringType(), False),
+            T.StructField("event_ts", T.TimestampType(), True),
+            T.StructField("event_date", T.DateType(), True),
+            T.StructField("event_year", T.IntegerType(), False),
+            T.StructField("event_month", T.IntegerType(), False),
+            T.StructField("event_day", T.IntegerType(), False),
+            T.StructField("quantity", T.IntegerType(), True),
+            T.StructField("amount", T.DecimalType(12, 2), True),
+        ]
+    )
+
     customers_df = read_csv_with_schema(
         spark, str(data_dir / "customers.csv"), customers_schema
     )
@@ -114,15 +132,18 @@ def main() -> None:
     order_items_df = read_csv_with_schema(
         spark, str(data_dir / "order_items.csv"), order_items_schema
     )
+    events_df = read_csv_with_schema(spark, str(data_dir / "events.csv"), events_schema)
 
     run_sql_file(spark, sql_dir / "02_drop_customers.sql")
     run_sql_file(spark, sql_dir / "03_drop_products.sql")
     run_sql_file(spark, sql_dir / "04_drop_orders.sql")
     run_sql_file(spark, sql_dir / "05_drop_order_items.sql")
-    run_sql_file(spark, sql_dir / "06_create_customers.sql")
-    run_sql_file(spark, sql_dir / "07_create_products.sql")
-    run_sql_file(spark, sql_dir / "08_create_orders.sql")
-    run_sql_file(spark, sql_dir / "09_create_order_items.sql")
+    run_sql_file(spark, sql_dir / "06_drop_events.sql")
+    run_sql_file(spark, sql_dir / "07_create_customers.sql")
+    run_sql_file(spark, sql_dir / "08_create_products.sql")
+    run_sql_file(spark, sql_dir / "09_create_orders.sql")
+    run_sql_file(spark, sql_dir / "10_create_order_items.sql")
+    run_sql_file(spark, sql_dir / "11_create_events.sql")
 
     customers_df.sortWithinPartitions("customer_id", "signup_date").writeTo(
         "iceberg.sales.customers"
@@ -136,12 +157,18 @@ def main() -> None:
     order_items_df.repartition("order_date", "order_id").sortWithinPartitions(
         "order_date", "order_id", "product_id"
     ).writeTo("iceberg.sales.order_items").append()
+    events_df.repartition(
+        "event_year", "event_month", "event_day"
+    ).sortWithinPartitions(
+        "event_year", "event_month", "event_day", "customer_id", "event_ts"
+    ).writeTo("iceberg.sales.events").append()
 
     print("Loaded rows:")
     print("customers  ->", spark.table("iceberg.sales.customers").count())
     print("products   ->", spark.table("iceberg.sales.products").count())
     print("orders     ->", spark.table("iceberg.sales.orders").count())
     print("order_items->", spark.table("iceberg.sales.order_items").count())
+    print("events     ->", spark.table("iceberg.sales.events").count())
 
     spark.stop()
 
